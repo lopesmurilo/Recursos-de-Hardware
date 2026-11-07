@@ -7,12 +7,9 @@
 
 ## 📱 Demonstração
 
-<div align="center">
+https://github.com/user-attachments/assets/59f54bfa-f687-4350-aa7c-424da1230666
 
-https://github.com/lopesmurilo/Recursos-de-Hardware/releases/download/v1.0-demo/showcaseM.mp4
-
-  > *Veja o app em ação: permissão, notificação imediata, agendamento e cancelamento.*
-</div>
+> *Veja o app em ação: permissão, notificação imediata, agendamento e cancelamento.*
 
 ---
 
