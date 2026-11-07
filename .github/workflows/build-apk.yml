@@ -39,14 +39,15 @@ jobs:
       - name: Build Vite (dist/)
         run: npm run build
 
-      # 6. Verificar ANDROID_HOME disponível no runner
-      - name: Verificar Android SDK do runner
+      # 6. Copiar dist/ para assets Android (substitui cap sync)
+      - name: Atualizar assets Android com build mais recente
         run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-          ls $ANDROID_HOME/platforms/ || echo "Nenhuma plataforma instalada ainda"
+          rm -rf android/app/src/main/assets/public
+          cp -r dist android/app/src/main/assets/public
+          echo "Assets copiados com sucesso!"
+          ls android/app/src/main/assets/public/
 
-      # 7. Aceitar licenças e instalar plataforma necessária
+      # 7. Aceitar licenças e instalar plataforma Android 36
       - name: Instalar Android SDK 36 e aceitar licenças
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
@@ -55,15 +56,11 @@ jobs:
             "build-tools;36.0.0" \
             "platform-tools"
 
-      # 8. Capacitor Sync Android
-      - name: Capacitor Sync Android
-        run: npx cap sync android
-
-      # 9. Dar permissão de execução ao Gradle wrapper
+      # 8. Dar permissão de execução ao Gradle wrapper
       - name: Permissão Gradle wrapper
         run: chmod +x android/gradlew
 
-      # 10. Cache do Gradle
+      # 9. Cache do Gradle
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
@@ -74,17 +71,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # 11. Compilar APK de debug
+      # 10. Compilar APK de debug
       - name: Compilar APK Debug
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 
-      # 12. Verificar se APK foi gerado
+      # 11. Verificar se APK foi gerado
       - name: Verificar APK gerado
         run: |
-          find android/app/build/outputs -name "*.apk" 2>/dev/null && echo "APK encontrado!" || echo "APK NÃO encontrado!"
+          find android/app/build/outputs -name "*.apk" && echo "✅ APK encontrado!" || echo "❌ APK NÃO encontrado!"
 
-      # 13. Upload APK como artefato
+      # 12. Upload APK como artefato
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
