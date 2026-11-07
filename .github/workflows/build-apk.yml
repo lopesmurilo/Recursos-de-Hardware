@@ -17,7 +17,7 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v4
 
-      # 2. Configurar Java 21 (exigido pelo AGP 8.x + Gradle 8.x)
+      # 2. Configurar Java 21 (exigido pelo AGP 8.13.0)
       - name: Configurar Java 21
         uses: actions/setup-java@v4
         with:
@@ -35,19 +35,19 @@ jobs:
       - name: Instalar dependências npm
         run: npm ci
 
-      # 5. Build do projeto React/Vite
+      # 5. Build do projeto React/Vite (gera dist/)
       - name: Build Vite (dist/)
         run: npm run build
 
-      # 6. Copiar dist/ para assets Android (substitui cap sync)
-      - name: Atualizar assets Android com build mais recente
-        run: |
-          rm -rf android/app/src/main/assets/public
-          cp -r dist android/app/src/main/assets/public
-          echo "Assets copiados com sucesso!"
-          ls android/app/src/main/assets/public/
+      # 6. Dar permissão de execução ao Gradle wrapper antes de qualquer operação Android
+      - name: Dar permissão ao Gradle wrapper
+        run: chmod +x android/gradlew
 
-      # 7. Aceitar licenças e instalar plataforma Android 36
+      # 7. Configurar local.properties explicitamente com ANDROID_HOME
+      - name: Configurar local.properties
+        run: echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+
+      # 8. Aceitar licenças e instalar plataformas SDK necessárias
       - name: Instalar Android SDK 36 e aceitar licenças
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
@@ -56,11 +56,11 @@ jobs:
             "build-tools;36.0.0" \
             "platform-tools"
 
-      # 8. Dar permissão de execução ao Gradle wrapper
-      - name: Permissão Gradle wrapper
-        run: chmod +x android/gradlew
+      # 9. Sincronizar assets e configs via Capacitor
+      - name: Capacitor Sync Android
+        run: npx cap sync android
 
-      # 9. Cache do Gradle
+      # 10. Cache do Gradle
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
@@ -71,20 +71,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # 10. Compilar APK de debug
+      # 11. Compilar APK de debug
       - name: Compilar APK Debug
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 
-      # 11. Verificar se APK foi gerado
-      - name: Verificar APK gerado
-        run: |
-          find android/app/build/outputs -name "*.apk" && echo "✅ APK encontrado!" || echo "❌ APK NÃO encontrado!"
+      # 12. Listar arquivos APK gerados
+      - name: Listar APKs gerados
+        run: find android/app/build/outputs/apk -name "*.apk" -ls
 
-      # 12. Upload APK como artefato
+      # 13. Publicar o APK como artefato
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-cleanwash
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: android/app/build/outputs/apk/debug/*.apk
           retention-days: 7
