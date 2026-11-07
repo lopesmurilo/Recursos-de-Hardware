@@ -24,11 +24,11 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      # 3. Configurar Node.js 20
-      - name: Configurar Node.js 20
+      # 3. Configurar Node.js 22 (exigido pelo @capacitor/cli 8.x)
+      - name: Configurar Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       # 4. Instalar dependencias npm
