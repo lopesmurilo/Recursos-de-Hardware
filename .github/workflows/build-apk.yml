@@ -17,7 +17,7 @@ jobs:
       - name: Checkout codigo
         uses: actions/checkout@v4
 
-      # 2. Configurar Java 21 (exigido pelo AGP 8.13.0)
+      # 2. Configurar Java 21
       - name: Configurar Java 21
         uses: actions/setup-java@v4
         with:
@@ -31,7 +31,7 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      # 4. Instalar dependencias npm (inclui @capacitor/cli e @capacitor/android)
+      # 4. Instalar dependencias npm
       - name: Instalar dependencias npm
         run: npm ci
 
@@ -39,7 +39,7 @@ jobs:
       - name: Build Vite (dist/)
         run: npm run build
 
-      # 6. Aceitar licencas e instalar plataformas SDK necessarias
+      # 6. Aceitar licencas SDK e instalar plataformas necessarias
       - name: Instalar Android SDK 36 e aceitar licencas
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
@@ -48,7 +48,7 @@ jobs:
             "build-tools;36.0.0" \
             "platform-tools"
 
-      # 7. Dar permissao de execucao ao Gradle wrapper
+      # 7. Dar permissao ao Gradle wrapper
       - name: Dar permissao ao Gradle wrapper
         run: chmod +x android/gradlew
 
@@ -56,22 +56,24 @@ jobs:
       - name: Configurar local.properties
         run: echo "sdk.dir=$ANDROID_HOME" > android/local.properties
 
-      # 9. Preparar assets Android: copia dist/ para assets e executa cap sync
-      - name: Preparar assets e sincronizar Capacitor
+      # 9. Executar cap sync (cria capacitor-cordova-android-plugins e copia assets)
+      - name: Capacitor Sync Android
         run: |
-          # Criar pasta de assets se nao existir
-          mkdir -p android/app/src/main/assets/public
+          echo "=== Executando npx cap sync android ==="
+          npx cap sync android
+          echo "=== cap sync concluido com sucesso ==="
 
-          # Copiar dist/ para assets Android (web assets)
-          cp -r dist/* android/app/src/main/assets/public/
+      # 10. Verificar estrutura criada pelo cap sync
+      - name: Verificar estrutura pos-sync
+        run: |
+          echo "=== Estrutura android/ ==="
+          ls -la android/
+          echo "=== Assets ==="
+          ls -la android/app/src/main/assets/ 2>/dev/null || echo "assets nao encontrado"
+          echo "=== capacitor-cordova-android-plugins ==="
+          ls -la android/capacitor-cordova-android-plugins/ 2>/dev/null || echo "capacitor-cordova-android-plugins nao encontrado"
 
-          # Executar cap sync para sincronizar plugins e configs Capacitor
-          npx cap sync android --no-build || {
-            echo "cap sync falhou com --no-build, tentando sem a flag..."
-            npx cap sync android || echo "cap sync falhou, continuando com assets ja copiados manualmente"
-          }
-
-      # 10. Cache do Gradle
+      # 11. Cache do Gradle
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
@@ -82,16 +84,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # 11. Compilar APK de debug
+      # 12. Compilar APK de debug
       - name: Compilar APK Debug
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 
-      # 12. Listar arquivos APK gerados
+      # 13. Listar arquivos APK gerados
       - name: Listar APKs gerados
         run: find android/app/build/outputs/apk -name "*.apk" -ls
 
-      # 13. Publicar o APK como artefato
+      # 14. Publicar o APK como artefato
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
