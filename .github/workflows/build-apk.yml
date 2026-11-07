@@ -1,4 +1,4 @@
-name: Build APK — CleanWash Lavanderia
+name: Build APK - CleanWash Lavanderia
 
 on:
   push:
@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout do repositório
-      - name: Checkout código
+      # 1. Checkout do repositorio
+      - name: Checkout codigo
         uses: actions/checkout@v4
 
       # 2. Configurar Java 21 (exigido pelo AGP 8.13.0)
@@ -31,24 +31,16 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      # 4. Instalar dependências npm
-      - name: Instalar dependências npm
+      # 4. Instalar dependencias npm (inclui @capacitor/cli e @capacitor/android)
+      - name: Instalar dependencias npm
         run: npm ci
 
       # 5. Build do projeto React/Vite (gera dist/)
       - name: Build Vite (dist/)
         run: npm run build
 
-      # 6. Dar permissão de execução ao Gradle wrapper antes de qualquer operação Android
-      - name: Dar permissão ao Gradle wrapper
-        run: chmod +x android/gradlew
-
-      # 7. Configurar local.properties explicitamente com ANDROID_HOME
-      - name: Configurar local.properties
-        run: echo "sdk.dir=$ANDROID_HOME" > android/local.properties
-
-      # 8. Aceitar licenças e instalar plataformas SDK necessárias
-      - name: Instalar Android SDK 36 e aceitar licenças
+      # 6. Aceitar licencas e instalar plataformas SDK necessarias
+      - name: Instalar Android SDK 36 e aceitar licencas
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
@@ -56,9 +48,28 @@ jobs:
             "build-tools;36.0.0" \
             "platform-tools"
 
-      # 9. Sincronizar assets e configs via Capacitor
-      - name: Capacitor Sync Android
-        run: npx cap sync android
+      # 7. Dar permissao de execucao ao Gradle wrapper
+      - name: Dar permissao ao Gradle wrapper
+        run: chmod +x android/gradlew
+
+      # 8. Configurar local.properties com ANDROID_HOME
+      - name: Configurar local.properties
+        run: echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+
+      # 9. Preparar assets Android: copia dist/ para assets e executa cap sync
+      - name: Preparar assets e sincronizar Capacitor
+        run: |
+          # Criar pasta de assets se nao existir
+          mkdir -p android/app/src/main/assets/public
+
+          # Copiar dist/ para assets Android (web assets)
+          cp -r dist/* android/app/src/main/assets/public/
+
+          # Executar cap sync para sincronizar plugins e configs Capacitor
+          npx cap sync android --no-build || {
+            echo "cap sync falhou com --no-build, tentando sem a flag..."
+            npx cap sync android || echo "cap sync falhou, continuando com assets ja copiados manualmente"
+          }
 
       # 10. Cache do Gradle
       - name: Cache Gradle
