@@ -8,7 +8,8 @@
 ## 📱 Demonstração
 
 <div align="center">
-  <video src="showcaseM.mp4" controls width="320" style="border-radius:12px"></video>
+
+https://github.com/lopesmurilo/Recursos-de-Hardware/releases/download/v1.0-demo/showcaseM.mp4
 
   > *Veja o app em ação: permissão, notificação imediata, agendamento e cancelamento.*
 </div>
